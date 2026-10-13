@@ -103,17 +103,17 @@ const routes = [
         component: () => import('@/views/nursework/Backdown.vue'),
         meta: { title: '退住申请', roles: ['USER'] },
       },
-      // ---- 餐饮占位（后端暂无 Controller）----
+      // ---- 餐饮管理 ----
       {
         path: 'food',
         name: 'Food',
-        component: () => import('@/views/placeholder/index.vue'),
+        component: () => import('@/views/food/index.vue'),
         meta: { title: '餐饮管理', roles: ['ADMIN'] },
       },
       {
         path: 'preference',
         name: 'Preference',
-        component: () => import('@/views/placeholder/index.vue'),
+        component: () => import('@/views/preference/index.vue'),
         meta: { title: '客户偏好', roles: ['ADMIN'] },
       },
       // ---- 系统管理（ADMIN）----
