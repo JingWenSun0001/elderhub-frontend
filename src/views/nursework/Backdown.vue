@@ -2,14 +2,17 @@
   <div class="page-card">
     <div class="table-toolbar">
       <div class="toolbar-filters">
-        <el-input
-          v-model="query.customerName"
-          placeholder="客户姓名"
+        <el-select
+          v-model="query.customerId"
+          placeholder="客户ID / 姓名"
+          filterable
           clearable
-          style="width: 160px"
-          @keyup.enter="search"
+          style="width: 220px"
+          @change="search"
           @clear="search"
-        />
+        >
+          <el-option v-for="c in customerOptions" :key="c.id" :label="c.label" :value="c.id" />
+        </el-select>
         <el-button type="primary" :icon="Search" @click="search">查询</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openAdd">新增退住申请</el-button>
@@ -43,11 +46,11 @@
       <Pagination v-model:page="query.pageNum" v-model:size="query.pageSize" :total="total" @change="load" />
     </div>
 
-    <!-- 新增退住申请 -->
-    <el-dialog v-model="addVisible" title="新增退住申请" width="480px">
+    <!-- 新增退住申请（destroy-on-close：每次打开重新加载可选客户，已提交申请的人不再出现） -->
+    <el-dialog v-model="addVisible" title="新增退住申请" width="480px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="客户" prop="customerId">
-          <CustomerPicker v-model="form.customerId" source="live" :apply-type="1" />
+          <CustomerPicker v-model="form.customerId" source="live" :apply-type="1" only-mine />
         </el-form-item>
         <el-form-item label="退住类型" prop="retreatType">
           <el-radio-group v-model="form.retreatType">
@@ -79,6 +82,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { nurseListBackDowns, nurseSaveBackDown } from '@/api/backdown'
+import { listMyCustomers } from '@/api/nurseDaily'
 import { useUserStore } from '@/stores/user'
 import { AUDIT_STATUS, RETREAT_TYPE } from '@/utils/constants'
 import { fmtDateTime, fmtOrDash } from '@/utils/format'
@@ -87,7 +91,8 @@ import StatusTag from '@/components/StatusTag.vue'
 import CustomerPicker from '@/components/CustomerPicker.vue'
 
 const userStore = useUserStore()
-const query = reactive({ customerName: '', pageNum: 1, pageSize: 10, userId: null })
+const query = reactive({ customerId: null, pageNum: 1, pageSize: 10, userId: null })
+const customerOptions = ref([])
 const list = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -145,5 +150,16 @@ async function doSave() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  // 加载当前管家名下客户，供查询下拉选择（显示 ID + 姓名）
+  listMyCustomers({ pageNum: 1, pageSize: 500, userId: userStore.userId })
+    .then((page) => {
+      customerOptions.value = (page.list || []).map((c) => ({
+        id: c.id,
+        label: `${c.customer_name || `客户${c.id}`}（ID:${c.id}）`,
+      }))
+    })
+    .catch(() => {})
+})
 </script>
